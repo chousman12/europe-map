@@ -1,0 +1,403 @@
+<title>Europe Quiz Show</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: game-show board in the course's passport colors (teal + gold), one projector screen; scoreboard pinned below the board */
+:root{
+  --stage:#0f2f2c; --board:#1F5C57; --board-hi:#28736c; --tile-used:#163f3b;
+  --gold:#B8863B; --gold-hi:#e4c98a; --paper:#fdf9f0; --ink:#132826; --muted:#9fc1bc;
+  --good:#5fd08b; --bad:#ef7a6a;
+  --display:"Alfa Slab One", Rockwell, "Roboto Slab", Georgia, serif;
+  --body:"Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--stage);color:var(--paper);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold-hi);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;padding-block:14px 18px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:12px;min-height:100%;box-sizing:border-box}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-hi);font-weight:700}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.5rem,3.4vw,2.4rem);margin:0;color:var(--paper);letter-spacing:.01em}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:2px solid var(--board-hi);background:transparent;border-radius:10px;padding:9px 14px;font-weight:700;color:var(--paper)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;flex:1}
+.cat{background:var(--board);border-bottom:4px solid var(--gold);border-radius:10px;padding:10px 6px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:clamp(.78rem,1.45vw,1.15rem);line-height:1.15;text-transform:uppercase;letter-spacing:.04em;min-height:56px;text-wrap:balance}
+.tile{background:var(--board);border:0;border-radius:10px;font-family:var(--display);font-size:clamp(1.3rem,3.4vw,2.8rem);color:var(--gold-hi);min-height:clamp(54px,10vh,110px);transition:background .15s,transform .15s;font-variant-numeric:tabular-nums}
+.tile:hover:not(:disabled){background:var(--board-hi);transform:translateY(-2px)}
+.tile:disabled{background:var(--tile-used);color:transparent;cursor:default}
+
+/* scoreboard */
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.team{background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;border-top:6px solid var(--c)}
+.team input{font:inherit;font-weight:700;border:0;background:transparent;color:var(--ink);padding:0;width:100%;min-width:0;font-size:1rem}
+.team .pts{font-family:var(--display);font-size:clamp(1.4rem,2.6vw,2.1rem);font-variant-numeric:tabular-nums;line-height:1.1}
+.team .adj{display:flex;gap:6px}
+.team .adj button{border:1px solid #cfd9d7;background:#fff;color:var(--ink);border-radius:8px;padding:2px 8px;font-weight:700;font-size:.85rem}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(6,20,19,.82);display:flex;align-items:center;justify-content:center;z-index:20;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+.card{background:var(--board);border:3px solid var(--gold);border-radius:18px;width:min(1000px,100%);max-height:100%;overflow:auto;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.card .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card .meta .val{font-family:var(--display);color:var(--gold-hi);font-size:1.5rem}
+.q{font-size:clamp(1.4rem,3.3vw,2.6rem);font-weight:700;line-height:1.25;text-wrap:balance;margin:0}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.choice{background:var(--stage);border:2px solid var(--board-hi);border-radius:12px;padding:14px 16px;font-size:clamp(1rem,2vw,1.5rem);text-align:left;display:flex;gap:12px;align-items:baseline}
+.choice b{font-family:var(--display);color:var(--gold-hi);font-weight:400}
+.choice.right{background:var(--good);border-color:var(--good);color:var(--ink)}
+.choice.right b{color:var(--ink)}
+.choice.dim{opacity:.4}
+button.choice{color:var(--paper);width:100%}
+button.choice:hover:not(:disabled){border-color:var(--gold)}
+button.choice:disabled{cursor:default}
+.choice.wrong{background:var(--bad);border-color:var(--bad);color:var(--ink);opacity:1}
+.choice.wrong b{color:var(--ink)}
+.verdict{font-family:var(--display);font-size:clamp(1.4rem,3vw,2.2rem);margin:0}
+.verdict.good{color:var(--good)} .verdict.bad{color:var(--bad)}
+.solo-sub{font-weight:700;font-size:.9rem;color:#3b5754}
+.setup .counts button.solo{min-width:0}
+.answer{background:var(--paper);color:var(--ink);border-radius:12px;padding:16px 18px;font-size:clamp(1.1rem,2.4vw,1.8rem);font-weight:700}
+.answer small{display:block;font-weight:400;font-size:.62em;margin-top:6px;color:#3b5754}
+.award{display:flex;flex-direction:column;gap:8px}
+.award .row{display:flex;flex-wrap:wrap;gap:8px}
+.award .row button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:var(--paper);color:var(--ink);border-left:8px solid var(--c)}
+.award .row button.minus{background:transparent;color:var(--paper);border:2px solid var(--board-hi);border-left:8px solid var(--c)}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+.timer{font-family:var(--display);font-size:1.5rem;color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.timer.low{color:var(--bad)}
+
+/* setup */
+.setup{display:flex;flex-direction:column;gap:14px}
+.setup .counts{display:flex;flex-wrap:wrap;gap:8px}
+.setup .counts button{border:2px solid var(--board-hi);background:var(--stage);border-radius:10px;padding:10px 16px;font-weight:700;font-size:1.1rem}
+.setup .counts button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.rules{margin:0;padding-left:1.2em;line-height:1.55;color:var(--paper)}
+.final-wagers{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.final-wagers label{display:flex;flex-direction:column;gap:4px;font-weight:700;background:var(--stage);border-radius:10px;padding:10px;border-left:8px solid var(--c)}
+.final-wagers input{font:inherit;font-size:1.2rem;padding:6px 8px;border-radius:8px;border:0;width:100%;box-sizing:border-box}
+.final-wagers .wbtns{display:flex;gap:6px}
+.final-wagers .wbtns button{flex:1;border:0;border-radius:8px;padding:6px;font-weight:700}
+.final-wagers .wbtns .y{background:var(--good);color:var(--ink)}
+.final-wagers .wbtns .n{background:var(--bad);color:var(--ink)}
+
+@media (max-width:700px){
+  .board{gap:5px}
+  .cat{font-size:.62rem;padding:6px 3px;letter-spacing:0}
+  .choices{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover:not(:disabled){transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Mr. Housman · Exploring Europe Review</div>
+      <h1>Europe Quiz Show</h1>
+    </div>
+    <div class="tools">
+      <button class="btn gold" id="finalBtn">Final Question</button>
+      <button class="btn" id="teamsBtn">Players</button>
+      <button class="btn" id="newBtn">New game</button>
+    </div>
+  </header>
+
+  <div class="board" id="board" aria-label="Question board"></div>
+  <div class="scores" id="scores"></div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="card" id="card" role="dialog" aria-modal="true"></div>
+</div>
+
+<script>
+/* ---------------- Questions (from the Europe unit: four-country deck, EU lesson, Western Europe test, unit vocabulary) ---------------- */
+const CATS=[
+ {name:"Germany",qs:[
+  {q:"What is the capital of Germany?",c:["Munich","Berlin","Vienna","Hamburg"],a:1},
+  {q:"Who runs Germany's government day to day (the “coach”)?",c:["The President","The King","The Chancellor","The Prime Minister"],a:2,n:"The President is the ceremonial head of state (the “captain”)."},
+  {q:"Which is a strong industry in Germany's economy?",c:["Banking","Automobiles","Farming","Tourism"],a:1,n:"Top exports: cars, machinery, and medicines."},
+  {q:"Germany is a FEDERAL republic. What does “federal” mean for Germany?",c:["A king shares power with parliament","Power is shared between the national government and 16 states","The EU makes all of Germany's laws","The army runs the government"],a:1,n:"The 16 states are called Länder."},
+  {q:"Germany borders more countries than any other country in Europe. How many?",c:["5","7","9","12"],a:2,n:"Its central location makes it a crossroads for trade."}
+ ]},
+ {name:"United Kingdom",qs:[
+  {q:"What is the capital of the United Kingdom?",c:["Dublin","Edinburgh","London","Manchester"],a:2},
+  {q:"Who is the UK's head of government (the “coach”)?",c:["The King","The Prime Minister","The President","The Chancellor"],a:1,n:"The King is the ceremonial head of state (the “captain”)."},
+  {q:"What type of government does the United Kingdom have?",c:["Federal republic","Absolute monarchy","Constitutional monarchy","Dictatorship"],a:2},
+  {q:"What was one of the main reasons for Brexit?",c:["Religious differences","Conflict with NATO","Support for the euro","Desire to control immigration policies"],a:3,n:"Leave voters wanted the UK, not the EU, to make its own rules on borders and laws."},
+  {q:"Which of these countries does NOT have a single written constitution?",c:["Spain","France","The UK","Germany"],a:2,n:"The UK's constitution is a mix of laws, court decisions, and traditions."}
+ ]},
+ {name:"France",qs:[
+  {q:"What is the capital of France?",c:["Lyon","Paris","Brussels","Marseille"],a:1},
+  {q:"Because of its six-sided shape, France has a nickname. What is it?",c:["The Boot","The Hexagon","The Square","The Diamond"],a:1},
+  {q:"In France, who shares executive power in the government?",c:["The King and the Parliament","The National Assembly and the Senate","The President and the Prime Minister","The President and the National Assembly"],a:2},
+  {q:"France is the “odd one out” of our four countries. Why?",c:["It has a king","Its President has real power, not just a ceremonial role","It left the EU","It has no parliament"],a:1,n:"In Germany, the UK, and Spain, the head of state is mostly a symbol."},
+  {q:"What type of government does France have?",c:["Constitutional monarchy","Semi-presidential republic","Federal parliamentary republic","Absolute monarchy"],a:1}
+ ]},
+ {name:"Spain",qs:[
+  {q:"What is the capital of Spain?",c:["Barcelona","Lisbon","Madrid","Seville"],a:2,n:"Madrid sits almost exactly in the center of Spain."},
+  {q:"Who is the head of state in Spain?",c:["Prime Minister","King","Chancellor","President"],a:1},
+  {q:"Spain shares the Iberian Peninsula with which country?",c:["France","Italy","Portugal","Morocco"],a:2},
+  {q:"What impact did the Moors have on Spain?",c:["They influenced architecture and culture","They colonized South America","They created the Spanish Inquisition","They abolished Spain's monarchy"],a:0,n:"Example: the Alhambra in Granada."},
+  {q:"Give one example of cultural diffusion connected to Spain.",open:true,ans:"Accept: the Moors bringing ideas from North Africa, OR the Spanish language and Catholic religion spreading to the Americas.",n:"Teacher decides if the team's answer earns the points."}
+ ]},
+ {name:"EU & NATO",qs:[
+  {q:"Which currency do most EU countries share?",c:["The pound","The dollar","The euro","The franc"],a:2},
+  {q:"What is the main purpose of the European Union (EU)?",c:["To promote peace, trade, cooperation, and open borders","To create one European army","To choose one leader for all of Europe","To keep each country isolated"],a:0},
+  {q:"What is the main purpose of NATO?",c:["Economic cooperation","Collective defense and security","Climate policies","Cultural exchange"],a:1,n:"Members promise to defend one another."},
+  {q:"Which of these countries does NOT use the euro?",c:["Spain","France","The UK","Germany"],a:2,n:"The UK uses the pound sterling, and it left the EU in 2020."},
+  {q:"TRUE or FALSE: The EU has one leader who makes all the decisions for its member countries.",c:["True","False"],a:1,n:"Power is shared among the European Commission, the European Parliament, and the Council of the EU."}
+ ]},
+ {name:"Maps & Words",qs:[
+  {q:"Land surrounded by water on three sides is called a…",c:["Strait","Peninsula","Island","Polder"],a:1,n:"Europe is a giant peninsula made of many smaller peninsulas."},
+  {q:"A narrow waterway that connects two larger bodies of water is a…",c:["Strait","Delta","Fjord","Plateau"],a:0,n:"Example: the Strait of Gibraltar between Spain and Africa."},
+  {q:"A tax a country puts on imported goods is a…",c:["Currency","Tariff","Export","Subsidy"],a:1},
+  {q:"Land reclaimed from the sea, like much of the Netherlands, is called a…",c:["Steppe","Polder","Peninsula","Delta"],a:1},
+  {q:"Europe and Asia together make up one huge landmass. What is it called?",c:["Pangaea","Eurasia","Scandinavia","The Balkans"],a:1}
+ ]}
+];
+const VALUES=[100,200,300,400,500];
+const FINAL={cat:"Captains & Coaches",q:"Name the head of GOVERNMENT (the “coach”) for all four countries: Germany, the United Kingdom, France, and Spain.",ans:"Germany: Chancellor · UK: Prime Minister · France: Prime Minister (sharing power with the President) · Spain: Prime Minister",n:"All four must be correct to win the wager."};
+const COLORS=["#e4c98a","#6fc3d6","#ef9a7a","#a5d987","#c9a7ef","#f2a5c3"];
+
+/* ---------------- State ---------------- */
+const $=id=>document.getElementById(id);
+const KEY="euQuizShow.v1";
+let S=load()||fresh(3);
+function fresh(n){return{teams:Array.from({length:n},(_,i)=>({name:n===1?"Player":`Team ${i+1}`,score:0})),used:[],solo:n===1,right:0,tried:0,finalDone:false}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.teams))return s}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------------- Board ---------------- */
+function renderBoard(){
+  const b=$("board");b.innerHTML="";
+  CATS.forEach(c=>{const d=document.createElement("div");d.className="cat";d.textContent=c.name;b.appendChild(d)});
+  VALUES.forEach((v,r)=>CATS.forEach((c,ci)=>{
+    const id=`${ci}-${r}`;const t=document.createElement("button");t.className="tile";t.textContent=v;
+    t.disabled=S.used.includes(id);t.setAttribute("aria-label",`${c.name} for ${v}`);
+    t.onclick=()=>openQ(ci,r);b.appendChild(t);
+  }));
+}
+function renderScores(){
+  const s=$("scores");s.innerHTML="";
+  S.teams.forEach((t,i)=>{
+    const d=document.createElement("div");d.className="team";d.style.setProperty("--c",COLORS[i]);
+    const inp=document.createElement("input");inp.value=t.name;inp.id=`team-name-${i}`;inp.setAttribute("aria-label",`Team ${i+1} name`);inp.maxLength=24;
+    inp.oninput=()=>{t.name=inp.value||`Team ${i+1}`;save()};
+    const p=document.createElement("div");p.className="pts";p.textContent=t.score;
+    if(S.solo){
+      inp.setAttribute("aria-label","Your name");
+      const sub=document.createElement("div");sub.className="solo-sub";sub.textContent=`${S.right} of ${S.tried} correct · ${30-S.used.length} questions left`;
+      d.append(inp,p,sub);s.appendChild(d);return;
+    }
+    const adj=document.createElement("div");adj.className="adj";
+    [["−100",-100],["+100",100]].forEach(([l,v])=>{const bt=document.createElement("button");bt.textContent=l;bt.setAttribute("aria-label",`${l} for ${t.name}`);bt.onclick=()=>{t.score+=v;save();renderScores()};adj.appendChild(bt)});
+    d.append(inp,p,adj);s.appendChild(d);
+  });
+}
+
+/* ---------------- Question modal ---------------- */
+let timerId=null;
+function closeModal(){clearInterval(timerId);$("overlay").hidden=true;$("card").innerHTML=""}
+function startTimer(el,secs){
+  clearInterval(timerId);let left=secs;el.textContent=`0:${String(left).padStart(2,"0")}`;el.classList.remove("low");
+  timerId=setInterval(()=>{left--;el.textContent=`0:${String(Math.max(left,0)).padStart(2,"0")}`;if(left<=10)el.classList.add("low");if(left<=0)clearInterval(timerId)},1000);
+}
+function openQ(ci,r){
+  const cat=CATS[ci],item=cat.qs[r],val=VALUES[r],id=`${ci}-${r}`;
+  const card=$("card");card.innerHTML="";
+  const meta=document.createElement("div");meta.className="meta";
+  meta.innerHTML=`<span class="eyebrow"></span><span class="timer" aria-live="off"></span><span class="val">${val}</span>`;
+  meta.firstChild.textContent=cat.name;
+  const q=document.createElement("p");q.className="q";q.textContent=item.q;
+  card.append(meta,q);
+  if(S.solo){soloQ(card,meta,item,val,id);return}
+  let choiceEls=[];
+  if(!item.open){
+    const ch=document.createElement("div");ch.className="choices";
+    item.c.forEach((t,i)=>{const b=document.createElement("div");b.className="choice";b.innerHTML=`<b>${"ABCD"[i]}</b><span></span>`;b.lastChild.textContent=t;ch.appendChild(b);choiceEls.push(b)});
+    card.appendChild(ch);
+  }
+  const ctl=document.createElement("div");ctl.className="tools";
+  const reveal=document.createElement("button");reveal.className="btn gold";reveal.textContent="Show answer";
+  const timerBtn=document.createElement("button");timerBtn.className="btn";timerBtn.textContent="Start 30-second timer";
+  const back=document.createElement("button");back.className="btn";back.textContent="Back to board";
+  timerBtn.onclick=()=>startTimer(meta.querySelector(".timer"),30);
+  back.onclick=closeModal;
+  ctl.append(reveal,timerBtn,back);card.appendChild(ctl);
+  reveal.onclick=()=>{
+    clearInterval(timerId);reveal.remove();timerBtn.remove();back.remove();
+    const ans=document.createElement("div");ans.className="answer";
+    ans.textContent=item.open?item.ans:`${"ABCD"[item.a]}. ${item.c[item.a]}`;
+    if(item.n){const s=document.createElement("small");s.textContent=item.n;ans.appendChild(s)}
+    choiceEls.forEach((b,i)=>b.classList.add(i===item.a?"right":"dim"));
+    card.insertBefore(ans,ctl);
+    ctl.replaceWith(awardPanel(val,id));
+  };
+  $("overlay").hidden=false;reveal.focus();
+}
+function soloFinish(card,ok,val,id,item,ans){
+  S.tried++;if(ok){S.right++;S.teams[0].score+=val}
+  if(!S.used.includes(id))S.used.push(id);save();renderScores();renderBoard();
+  const v=document.createElement("p");v.className="verdict "+(ok?"good":"bad");v.textContent=ok?`Correct! +${val}`:"Not this time.";
+  const a=document.createElement("div");a.className="answer";a.textContent=ans;
+  if(item.n){const s=document.createElement("small");s.textContent=item.n;a.appendChild(s)}
+  const back=document.createElement("button");back.className="btn gold";
+  const done=S.used.length>=30;
+  back.textContent=done?"Go to the Final Question":"Back to board";
+  back.onclick=()=>{closeModal();if(done)openFinal()};
+  card.append(v,a,back);back.focus();
+}
+function soloQ(card,meta,item,val,id){
+  meta.querySelector(".timer").remove();
+  if(item.open){
+    const hint=document.createElement("p");hint.className="hint";hint.textContent="Think of your answer (or write it down), then check it.";
+    const rv=document.createElement("button");rv.className="btn gold";rv.textContent="Check my answer";
+    const back=document.createElement("button");back.className="btn";back.textContent="Back to board";back.onclick=closeModal;
+    const ctl=document.createElement("div");ctl.className="tools";ctl.append(rv,back);
+    card.append(hint,ctl);
+    rv.onclick=()=>{
+      ctl.remove();hint.remove();
+      const a=document.createElement("div");a.className="answer";a.textContent=item.ans;
+      const p=document.createElement("p");p.className="hint";p.textContent="Be honest: did your answer match?";
+      const row=document.createElement("div");row.className="tools";
+      const y=document.createElement("button");y.className="btn gold";y.textContent="I got it right";
+      const n=document.createElement("button");n.className="btn";n.textContent="I missed it";
+      row.append(y,n);card.append(a,p,row);
+      const fin=ok=>{a.remove();p.remove();row.remove();soloFinish(card,ok,val,id,{},item.ans)};
+      y.onclick=()=>fin(true);n.onclick=()=>fin(false);
+    };
+    $("overlay").hidden=false;rv.focus();return;
+  }
+  const ch=document.createElement("div");ch.className="choices";const btns=[];
+  item.c.forEach((t,i)=>{
+    const b=document.createElement("button");b.type="button";b.className="choice";b.innerHTML=`<b>${"ABCD"[i]}</b><span></span>`;b.lastChild.textContent=t;
+    b.onclick=()=>{
+      btns.forEach((x,k)=>{x.disabled=true;if(k===item.a)x.classList.add("right");else if(x===b)x.classList.add("wrong");else x.classList.add("dim")});
+      back.remove();
+      soloFinish(card,i===item.a,val,id,item,`${"ABCD"[item.a]}. ${item.c[item.a]}`);
+    };
+    ch.appendChild(b);btns.push(b);
+  });
+  const back=document.createElement("button");back.className="btn";back.textContent="Back to board";back.onclick=closeModal;
+  card.append(ch,back);$("overlay").hidden=false;btns[0].focus();
+}
+function awardPanel(val,id){
+  const w=document.createElement("div");w.className="award";
+  const p=document.createElement("p");p.className="hint";p.textContent=`Tap each team that got it right (+${val}). Use −${val} if a team buzzed in wrong.`;
+  const row=document.createElement("div");row.className="row";
+  S.teams.forEach((t,i)=>{
+    const plus=document.createElement("button");plus.style.setProperty("--c",COLORS[i]);plus.textContent=`${t.name} +${val}`;
+    plus.onclick=()=>{t.score+=val;plus.disabled=true;plus.style.opacity=.5;save();renderScores()};
+    const minus=document.createElement("button");minus.className="minus";minus.style.setProperty("--c",COLORS[i]);minus.textContent=`−${val}`;minus.setAttribute("aria-label",`${t.name} minus ${val}`);
+    minus.onclick=()=>{t.score-=val;minus.disabled=true;minus.style.opacity=.5;save();renderScores()};
+    row.append(plus,minus);
+  });
+  const done=document.createElement("button");done.className="btn gold";done.textContent="Done — back to board";
+  done.onclick=()=>{if(!S.used.includes(id))S.used.push(id);save();renderBoard();closeModal()};
+  w.append(p,row,done);return w;
+}
+
+/* ---------------- Final question ---------------- */
+function openFinal(){
+  const card=$("card");card.innerHTML="";
+  const meta=document.createElement("div");meta.className="meta";
+  meta.innerHTML=`<span class="eyebrow">Final Question · ${FINAL.cat}</span><span class="timer"></span><span class="val">Wager</span>`;
+  const step=document.createElement("p");step.className="q";step.textContent=S.solo?`Category: ${FINAL.cat}. Decide how many of your points to bet, from 0 up to ${Math.max(0,S.teams[0].score)}. You'll enter it after you see the answer.`:`Category: ${FINAL.cat}. Each team writes down a wager, from 0 up to its current score.`;
+  const go=document.createElement("button");go.className="btn gold";go.textContent="Reveal the final question";
+  const back=document.createElement("button");back.className="btn";back.textContent="Back to board";back.onclick=closeModal;
+  const ctl=document.createElement("div");ctl.className="tools";ctl.append(go,back);
+  card.append(meta,step,ctl);
+  go.onclick=()=>{
+    step.textContent=FINAL.q;
+    const tb=document.createElement("button");tb.className="btn";tb.textContent="Start 60-second timer";tb.onclick=()=>startTimer(meta.querySelector(".timer"),60);
+    const rv=document.createElement("button");rv.className="btn gold";rv.textContent="Show answer";
+    ctl.innerHTML="";ctl.append(rv,tb,back);
+    rv.onclick=()=>{
+      clearInterval(timerId);
+      const ans=document.createElement("div");ans.className="answer";ans.textContent=FINAL.ans;
+      const s=document.createElement("small");s.textContent=FINAL.n;ans.appendChild(s);
+      const grid=document.createElement("div");grid.className="final-wagers";
+      S.teams.forEach((t,i)=>{
+        const l=document.createElement("label");l.style.setProperty("--c",COLORS[i]);
+        const nm=document.createElement("span");nm.textContent=`${t.name} wager`;
+        const inp=document.createElement("input");inp.type="number";inp.min=0;inp.inputMode="numeric";inp.id=`wager-${i}`;inp.value=0;
+        const wb=document.createElement("div");wb.className="wbtns";
+        if(S.solo)nm.textContent="Your wager";
+        const y=document.createElement("button");y.className="y";y.type="button";y.textContent=S.solo?"I got it right":"Right";
+        const n=document.createElement("button");n.className="n";n.type="button";n.textContent=S.solo?"I missed it":"Wrong";
+        const apply=sign=>{const v=Math.max(0,Math.min(Math.abs(t.score)||0,parseInt(inp.value,10)||0));t.score+=sign*v;y.disabled=n.disabled=inp.disabled=true;wb.style.opacity=.5;save();renderScores()};
+        y.onclick=()=>apply(1);n.onclick=()=>apply(-1);
+        wb.append(y,n);l.append(nm,inp,wb);grid.appendChild(l);
+      });
+      const fin=document.createElement("button");fin.className="btn gold";fin.textContent=S.solo?"See my results":"Show the winner";
+      fin.onclick=showWinner;
+      ctl.replaceWith(grid);card.append(fin);
+      card.insertBefore(ans,grid);
+    };
+  };
+  $("overlay").hidden=false;go.focus();
+}
+function showWinner(){
+  const card=$("card");card.innerHTML="";
+  if(S.solo){
+    const t=S.teams[0];
+    const e=document.createElement("div");e.className="eyebrow";e.textContent="Europe Quiz Show · Results";
+    const h=document.createElement("p");h.className="q";h.textContent=`Nice work, ${t.name}!`;
+    const big=document.createElement("p");big.className="verdict good";big.textContent=`${t.score} points`;
+    const a=document.createElement("div");a.className="answer";
+    a.textContent=`${S.right} of ${S.tried} questions correct`;
+    const s=document.createElement("small");s.textContent=`Finished ${new Date().toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}. Take a screenshot if your teacher asks for it.`;a.appendChild(s);
+    const row=document.createElement("div");row.className="tools";
+    const again=document.createElement("button");again.className="btn gold";again.textContent="Play again";
+    again.onclick=()=>{const nm=t.name;S=fresh(1);S.teams[0].name=nm;save();renderBoard();renderScores();closeModal()};
+    const close=document.createElement("button");close.className="btn";close.textContent="Close";close.onclick=closeModal;
+    row.append(again,close);card.append(e,h,big,a,row);$("overlay").hidden=false;return;
+  }
+  const ranked=S.teams.map((t,i)=>({...t,i})).sort((a,b)=>b.score-a.score);
+  const top=ranked[0].score;const winners=ranked.filter(t=>t.score===top);
+  const h=document.createElement("p");h.className="q";h.textContent=winners.length>1?`It's a tie: ${winners.map(w=>w.name).join(" & ")}!`:`${winners[0].name} wins!`;
+  const list=document.createElement("div");list.className="final-wagers";
+  ranked.forEach((t,k)=>{const l=document.createElement("label");l.style.setProperty("--c",COLORS[t.i]);l.innerHTML=`<span></span><span class="timer"></span>`;l.firstChild.textContent=`${k+1}. ${t.name}`;l.lastChild.textContent=t.score;list.appendChild(l)});
+  const back=document.createElement("button");back.className="btn gold";back.textContent="Close";back.onclick=closeModal;
+  card.append(h,list,back);$("overlay").hidden=false;
+}
+
+/* ---------------- Setup ---------------- */
+function openSetup(isNew){
+  const card=$("card");card.innerHTML="";
+  const w=document.createElement("div");w.className="setup";
+  w.innerHTML=`<div class="eyebrow">${isNew?"New game":"Players"}</div><p class="q" style="font-size:clamp(1.3rem,2.6vw,2rem)">Who is playing?</p>`;
+  const counts=document.createElement("div");counts.className="counts";
+  let pick=S.teams.length;
+  for(let n=1;n<=6;n++){const b=document.createElement("button");b.textContent=n===1?"Just me (solo)":`${n} teams`;b.setAttribute("aria-pressed",n===pick);b.onclick=()=>{pick=n;[...counts.children].forEach(x=>x.setAttribute("aria-pressed",x===b))};counts.appendChild(b)}
+  const rules=document.createElement("ul");rules.className="rules";
+  const soloRules="<li>Pick any category and point value.</li><li>Tap your answer. Right answers earn the points.</li><li>Type your name on the scoreboard so it shows on your results.</li><li>When the board is empty, try the Final Question and bet some of your points.</li>";
+  const teamRules="<li>A team picks a category and point value.</li><li>Every team writes its answer on a whiteboard before the answer is shown.</li><li>Award points to every team that got it right.</li><li>Rename teams by tapping their names on the scoreboard.</li><li>Save the Final Question for the end: teams wager up to their score.</li>";
+  rules.innerHTML=pick===1?soloRules:teamRules;
+  counts.addEventListener("click",()=>{rules.innerHTML=pick===1?soloRules:teamRules});
+  const ctl=document.createElement("div");ctl.className="tools";
+  const go=document.createElement("button");go.className="btn gold";go.textContent=isNew?"Start new game":"Apply";
+  go.onclick=()=>{
+    if(isNew||(pick===1)!==S.solo){S=fresh(pick)}
+    else{while(S.teams.length<pick)S.teams.push({name:`Team ${S.teams.length+1}`,score:0});S.teams.length=pick}
+    save();renderBoard();renderScores();closeModal();
+  };
+  const cancel=document.createElement("button");cancel.className="btn";cancel.textContent="Cancel";cancel.onclick=closeModal;
+  ctl.append(go,cancel);
+  w.append(counts,rules,ctl);card.appendChild(w);$("overlay").hidden=false;go.focus();
+}
+
+$("finalBtn").onclick=openFinal;
+$("teamsBtn").onclick=()=>openSetup(false);
+$("newBtn").onclick=()=>openSetup(true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("overlay").hidden)closeModal()});
+
+renderBoard();renderScores();
+if(!load())openSetup(true);
+</script>
